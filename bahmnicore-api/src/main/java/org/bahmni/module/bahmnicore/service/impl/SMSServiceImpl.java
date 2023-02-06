@@ -1,18 +1,21 @@
 package org.bahmni.module.bahmnicore.service.impl;
 
+import org.apache.commons.lang.StringUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import org.bahmni.module.bahmnicore.contract.SMS.SMSRequest;
-import org.bahmni.module.bahmnicore.properties.SMSProperties;
 import org.bahmni.module.bahmnicore.service.BahmniDrugOrderService;
 import org.bahmni.module.bahmnicore.service.SMSService;
 import org.openmrs.Patient;
 
+import org.openmrs.api.context.Context;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
+import java.text.MessageFormat;
 import java.util.Date;
+import java.util.Locale;
 
 import static org.bahmni.module.bahmnicore.util.BahmniDateUtil.convertUTCToGivenFormat;
 
@@ -26,6 +29,9 @@ import org.apache.http.impl.client.HttpClientBuilder;
 @Service
 public class SMSServiceImpl implements SMSService {
     private static Logger logger = LogManager.getLogger(BahmniDrugOrderService.class);
+    private final static String PRESCRIPTION_SMS_TEMPLATE = "bahmni.prescriptionSMSTemplate";
+    private final static String SMS_TIMEZONE = "bahmni.sms.timezone";
+    private final static String SMS_URL = "bahmni.sms.url";
 
     @Autowired
     public SMSServiceImpl() {}
@@ -41,7 +47,7 @@ public class SMSServiceImpl implements SMSService {
             String jsonObject = Obj.writeValueAsString(smsRequest);
             StringEntity params = new StringEntity(jsonObject);
 
-            HttpPost request = new HttpPost(SMSProperties.getProperty("sms.url"));
+            HttpPost request = new HttpPost(Context.getMessageSourceService().getMessage(SMS_URL, null, new Locale("en")));
             request.addHeader("content-type", "application/json");
             request.setEntity(params);
             HttpClient httpClient = HttpClientBuilder.create().build();
@@ -56,15 +62,16 @@ public class SMSServiceImpl implements SMSService {
 
     @Override
     public String getPrescriptionMessage(String lang, Date visitDate, Patient patient, String location, String providerDetail, String prescriptionDetail) {
-        String prescriptionSMSContent = SMSProperties.getProperty("sms." + lang + ".prescriptionSMS");
-        prescriptionSMSContent = prescriptionSMSContent.replace("#visitDate", convertUTCToGivenFormat(visitDate, "dd-MM-yyyy", SMSProperties.getProperty("sms.timeZone")));
-        prescriptionSMSContent = prescriptionSMSContent.replace("#patientName",patient.getGivenName() + " " + patient.getFamilyName());
-        prescriptionSMSContent = prescriptionSMSContent.replace("#gender", patient.getGender());
-        prescriptionSMSContent = prescriptionSMSContent.replace("#age", patient.getAge().toString());
-        prescriptionSMSContent = prescriptionSMSContent.replace("#doctorDetail", providerDetail);
-        prescriptionSMSContent = prescriptionSMSContent.replace("#location", location);
-        prescriptionSMSContent = prescriptionSMSContent.replace("#prescriptionDetails", prescriptionDetail);
-        return prescriptionSMSContent;
+        String smsTimeZone = Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, new Locale(lang));
+        String smsTemplate = Context.getAdministrationService().getGlobalProperty(PRESCRIPTION_SMS_TEMPLATE);
+        Object[] arguments = {convertUTCToGivenFormat(visitDate, "dd-MM-yyyy", smsTimeZone),
+                patient.getGivenName() + " " + patient.getFamilyName(), patient.getGender(), patient.getAge().toString(),
+                providerDetail, location, prescriptionDetail};
+        if (StringUtils.isBlank(smsTemplate)) {
+            return Context.getMessageSourceService().getMessage(PRESCRIPTION_SMS_TEMPLATE, arguments, new Locale(lang));
+        } else {
+            return new MessageFormat(smsTemplate).format(arguments);
+        }
     }
 
 }

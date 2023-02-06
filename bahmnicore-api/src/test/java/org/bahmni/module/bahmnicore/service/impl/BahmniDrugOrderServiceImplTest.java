@@ -2,7 +2,6 @@ package org.bahmni.module.bahmnicore.service.impl;
 
 import org.apache.commons.lang3.time.DateUtils;
 import org.bahmni.module.bahmnicore.dao.OrderDao;
-import org.bahmni.module.bahmnicore.properties.SMSProperties;
 import org.bahmni.module.bahmnicore.service.BahmniProgramWorkflowService;
 import org.junit.Before;
 import org.junit.Test;
@@ -18,9 +17,10 @@ import org.openmrs.OrderType;
 import org.openmrs.Patient;
 import org.openmrs.api.OrderService;
 import org.openmrs.api.PatientService;
+import org.openmrs.api.context.Context;
+import org.openmrs.messagesource.MessageSourceService;
 import org.openmrs.module.bahmniemrapi.drugorder.contract.BahmniDrugOrder;
 import org.openmrs.module.emrapi.encounter.domain.EncounterTransaction;
-import org.powermock.api.mockito.PowerMockito;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
 
@@ -46,9 +46,10 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 import static org.mockito.MockitoAnnotations.initMocks;
+import static org.powermock.api.mockito.PowerMockito.mockStatic;
 
 @RunWith(PowerMockRunner.class)
-@PrepareForTest({SMSProperties.class})
+@PrepareForTest({Context.class})
 public class BahmniDrugOrderServiceImplTest {
 
     public static final String PATIENT_PROGRAM_UUID = "patient-program-uuid";
@@ -62,6 +63,8 @@ public class BahmniDrugOrderServiceImplTest {
     OrderService orderService;
     @Mock
     OrderDao orderDao;
+    @Mock
+    MessageSourceService messageSourceService;
 
     @InjectMocks
     BahmniDrugOrderServiceImpl bahmniDrugOrderService;
@@ -140,14 +143,15 @@ public class BahmniDrugOrderServiceImplTest {
 
     @Test
     public void shouldReturnPrescriptionAsString() throws Exception {
-        PowerMockito.mockStatic(SMSProperties.class);
-        when(SMSProperties.getProperty("sms.timeZone")).thenReturn("IST");
-        Date drugOrderStartDate = new SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH).parse("January 30, 2023");
+        mockStatic(Context.class);
+        when(Context.getMessageSourceService()).thenReturn(messageSourceService);
+        when(messageSourceService.getMessage("bahmni.sms.timezone", null, new Locale("en"))).thenReturn("IST");
+        Date drugOrderStartDate = new SimpleDateFormat("MMMM d, yyyy", new Locale("en")).parse("January 30, 2023");
         EncounterTransaction.DrugOrder etDrugOrder = createETDrugOrder("1", "Paracetamol", 2.0, "Once a day", drugOrderStartDate, 5);
         BahmniDrugOrder bahmniDrugOrder = createBahmniDrugOrder(null, etDrugOrder);
         Map<BahmniDrugOrder, Integer> drugOrderDurationMap = new LinkedHashMap<>();
         drugOrderDurationMap.put(bahmniDrugOrder, 10);
-        String prescriptionString = bahmniDrugOrderService.getPrescriptionAsString(drugOrderDurationMap);
+        String prescriptionString = bahmniDrugOrderService.getPrescriptionAsString(drugOrderDurationMap, new Locale("en"));
         String expectedPrescriptionString = "1. Paracetamol, 2 tab (s), Once a day-10 Days, start from 30-01-2023\n";
         assertEquals(expectedPrescriptionString, prescriptionString);
     }
@@ -164,7 +168,7 @@ public class BahmniDrugOrderServiceImplTest {
         List<BahmniDrugOrder> bahmniDrugOrderList = new ArrayList<>();
         try {
             EncounterTransaction.Provider provider = createETProvider("1", "Harry");
-            Date drugOrderStartDate = new SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH).parse("January 30, 2023");
+            Date drugOrderStartDate = new SimpleDateFormat("MMMM d, yyyy", new Locale("en")).parse("January 30, 2023");
             EncounterTransaction.DrugOrder etDrugOrder = createETDrugOrder("1", "Paracetamol", 2.0, "Once a day", drugOrderStartDate, 5);
             BahmniDrugOrder bahmniDrugOrder = createBahmniDrugOrder(provider, etDrugOrder);
             bahmniDrugOrderList.add(bahmniDrugOrder);
@@ -176,7 +180,7 @@ public class BahmniDrugOrderServiceImplTest {
             bahmniDrugOrderList.add(bahmniDrugOrder);
 
             provider = createETProvider("1", "Harry");
-            drugOrderStartDate = new SimpleDateFormat("MMMM d, yyyy", Locale.ENGLISH).parse("January 30, 2023");
+            drugOrderStartDate = new SimpleDateFormat("MMMM d, yyyy", new Locale("en")).parse("January 30, 2023");
             etDrugOrder = createETDrugOrder("2", "Amoxicillin", 1.0, "Twice a day", drugOrderStartDate, 3);
             bahmniDrugOrder = createBahmniDrugOrder(provider, etDrugOrder);
             bahmniDrugOrderList.add(bahmniDrugOrder);

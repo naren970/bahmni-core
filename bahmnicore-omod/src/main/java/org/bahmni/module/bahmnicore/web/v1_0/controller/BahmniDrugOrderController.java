@@ -6,12 +6,10 @@ import org.apache.logging.log4j.Logger;
 import org.bahmni.module.bahmnicore.contract.SMS.PrescriptionSMS;
 import org.bahmni.module.bahmnicore.service.BahmniDrugOrderService;
 import org.bahmni.module.bahmnicore.service.BahmniObsService;
-import org.bahmni.module.bahmnicore.service.BahmniVisitService;
-import org.bahmni.module.bahmnicore.service.SMSService;
+import org.bahmni.module.bahmnicore.service.SharePrescriptionService;
 import org.bahmni.module.bahmnicore.util.BahmniDateUtil;
 import org.openmrs.Concept;
 import org.openmrs.DrugOrder;
-import org.openmrs.Visit;
 import org.openmrs.api.ConceptService;
 import org.openmrs.module.bahmniemrapi.drugorder.contract.BahmniDrugOrder;
 import org.openmrs.module.bahmniemrapi.drugorder.contract.BahmniOrderAttribute;
@@ -40,7 +38,6 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.stream.Collectors;
 
 @Controller
 public class BahmniDrugOrderController extends BaseRestController {
@@ -55,21 +52,17 @@ public class BahmniDrugOrderController extends BaseRestController {
     @Autowired
     private ConceptService conceptService;
 
+    @Autowired
+    private SharePrescriptionService sharePrescriptionServiceService;
+
     private static Logger logger = LogManager.getLogger(BahmniDrugOrderController.class);
 
     private BahmniDrugOrderMapper bahmniDrugOrderMapper;
 
-    @Autowired
-    private BahmniVisitService bahmniVisitService;
-
-    @Autowired
-    private SMSService smsService;
-
-    public BahmniDrugOrderController(BahmniDrugOrderService drugOrderService, BahmniVisitService bahmniVisitService, SMSService smsService) {
+    public BahmniDrugOrderController(BahmniDrugOrderService drugOrderService, SharePrescriptionService sharePrescriptionServiceService) {
         this.drugOrderService = drugOrderService;
         this.bahmniDrugOrderMapper = new BahmniDrugOrderMapper();
-        this.bahmniVisitService = bahmniVisitService;
-        this.smsService = smsService;
+        this.sharePrescriptionServiceService = sharePrescriptionServiceService;
     }
     public BahmniDrugOrderController() {
         this.bahmniDrugOrderMapper = new BahmniDrugOrderMapper();
@@ -146,14 +139,7 @@ public class BahmniDrugOrderController extends BaseRestController {
     @RequestMapping(value = baseUrl+ "/sendPrescriptionSMS", method = RequestMethod.POST)
     @ResponseBody
     public Object sendPrescriptionSMS(@RequestBody PrescriptionSMS prescription) throws Exception {
-        Visit visit = bahmniVisitService.getVisitSummary(prescription.getVisitUuid());
-        String locationName = bahmniVisitService.getParentLocationNameForVisit(visit.getLocation());
-        List<BahmniDrugOrder> drugOrderList = getSortedBahmniDrugOrdersForVisit(visit.getPatient().getUuid(), visit.getUuid());
-        Map<BahmniDrugOrder, Integer> mergedDrugOrderMap = drugOrderService.getMergedDrugOrderMap(drugOrderList);
-        String providerString = drugOrderService.getAllProviderAsString(drugOrderList);
-        String prescriptionString = drugOrderService.getPrescriptionAsString(mergedDrugOrderMap);
-        String prescriptionSMSContent = smsService.getPrescriptionMessage(prescription.getLocale(), visit.getStartDatetime(), visit.getPatient(), locationName, providerString, prescriptionString);
-        return smsService.sendSMS(visit.getPatient().getAttribute("phoneNumber").getValue(), prescriptionSMSContent);
+        return sharePrescriptionServiceService.sendPresciptionSMS(prescription);
     }
 
     Set<Concept> getDrugConcepts(String drugConceptSetName){
@@ -242,14 +228,4 @@ public class BahmniDrugOrderController extends BaseRestController {
         return groupedDrugOrders;
     }
 
-    private List<BahmniDrugOrder> getSortedBahmniDrugOrdersForVisit(String patientUuid, String visitUuid) {
-        List<String> visitUuidList = new ArrayList<>();
-        visitUuidList.add(visitUuid);
-        List<BahmniDrugOrder> drugOrderList = getPrescribedOrders(visitUuidList, patientUuid,
-                    null,null, null, null, null);
-        List<BahmniDrugOrder> sortedDrugOrderList = drugOrderList.stream()
-                .sorted(Comparator.comparing(BahmniDrugOrder::getEffectiveStartDate))
-                .collect(Collectors.toList());
-        return sortedDrugOrderList;
-    }
 }

@@ -7,8 +7,8 @@ import org.bahmni.module.bahmnicore.contract.drugorder.ConceptData;
 import org.bahmni.module.bahmnicore.contract.drugorder.DrugOrderConfigResponse;
 import org.bahmni.module.bahmnicore.contract.drugorder.OrderFrequencyData;
 import org.bahmni.module.bahmnicore.dao.OrderDao;
-import org.bahmni.module.bahmnicore.properties.SMSProperties;
 import org.bahmni.module.bahmnicore.service.BahmniDrugOrderService;
+import org.bahmni.module.bahmnicore.service.BahmniObsService;
 import org.bahmni.module.bahmnicore.service.BahmniProgramWorkflowService;
 import org.openmrs.CareSetting;
 import org.openmrs.Concept;
@@ -26,6 +26,7 @@ import org.openmrs.api.context.Context;
 import org.openmrs.module.bahmniemrapi.drugorder.contract.BahmniDrugOrder;
 import org.openmrs.module.bahmniemrapi.drugorder.contract.BahmniOrderAttribute;
 import org.openmrs.module.bahmniemrapi.drugorder.mapper.BahmniDrugOrderMapper;
+import org.openmrs.module.bahmniemrapi.encountertransaction.contract.BahmniObservation;
 import org.openmrs.module.emrapi.encounter.ConceptMapper;
 import org.openmrs.module.emrapi.encounter.domain.EncounterTransaction;
 import org.openmrs.module.emrapi.utils.HibernateLazyLoader;
@@ -45,6 +46,9 @@ import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.LinkedHashSet;
 import java.util.stream.Collectors;
+import java.util.Locale;
+import java.util.Arrays;
+import java.util.Comparator;
 
 import static org.bahmni.module.bahmnicore.util.BahmniDateUtil.convertUTCToGivenFormat;
 
@@ -57,21 +61,22 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
     private ConceptMapper conceptMapper = new ConceptMapper();
     private BahmniProgramWorkflowService bahmniProgramWorkflowService;
     private BahmniDrugOrderMapper bahmniDrugOrderMapper;
-
+    private BahmniObsService bahmniObsService;
 
     private static final String GP_DOSING_INSTRUCTIONS_CONCEPT_UUID = "order.dosingInstructionsConceptUuid";
     private static Logger logger = LogManager.getLogger(BahmniDrugOrderService.class);
-
+    private final static String SMS_TIMEZONE = "bahmni.sms.timezone";
 
     @Autowired
-    public BahmniDrugOrderServiceImpl(ConceptService conceptService, OrderService orderService,
-                                      PatientService patientService, OrderDao orderDao, BahmniProgramWorkflowService bahmniProgramWorkflowService) {
+    public BahmniDrugOrderServiceImpl(ConceptService conceptService, OrderService orderService, PatientService patientService, OrderDao orderDao,
+                                      BahmniProgramWorkflowService bahmniProgramWorkflowService, BahmniObsService bahmniObsService) {
         this.conceptService = conceptService;
         this.orderService = orderService;
         this.openmrsPatientService = patientService;
         this.orderDao = orderDao;
         this.bahmniProgramWorkflowService = bahmniProgramWorkflowService;
         this.bahmniDrugOrderMapper = new BahmniDrugOrderMapper();
+        this.bahmniObsService = bahmniObsService;
     }
 
 
@@ -174,6 +179,19 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
     }
 
     @Override
+    public List<BahmniDrugOrder> getSortedBahmniDrugOrdersForVisit(String patientUuid, String visitUuid) {
+        List<DrugOrder> drugOrderList = getPrescribedDrugOrders(Arrays.asList(visitUuid), patientUuid, null,null, null, null, null);
+        List<BahmniDrugOrder> bahmniDrugOrderList = getBahmniDrugOrdersForVisit(patientUuid, drugOrderList);
+        Collections.sort(bahmniDrugOrderList, new Comparator<BahmniDrugOrder>() {
+            @Override
+            public int compare(BahmniDrugOrder o1, BahmniDrugOrder o2) {
+                return o1.getEffectiveStartDate().compareTo(o2.getEffectiveStartDate());
+            }
+        });
+        return bahmniDrugOrderList;
+    }
+
+    @Override
     public Map<BahmniDrugOrder, Integer> getMergedDrugOrderMap(List<BahmniDrugOrder> drugOrderList) {
         Map<BahmniDrugOrder, Integer> mergedDrugOrderMap = new LinkedHashMap<>();
         for(BahmniDrugOrder drugOrder : drugOrderList) {
@@ -202,11 +220,11 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
     }
 
     @Override
-    public String getPrescriptionAsString(Map<BahmniDrugOrder, Integer> drugOrderDurationMap) {
+    public String getPrescriptionAsString(Map<BahmniDrugOrder, Integer> drugOrderDurationMap, Locale locale) {
         String prescriptionString = "";
         int counter = 1;
         for (Map.Entry<BahmniDrugOrder, Integer> entry : drugOrderDurationMap.entrySet()) {
-            prescriptionString += counter++ + ". " + getDrugOrderString(entry.getKey(), drugOrderDurationMap.get(entry.getKey())) + "\n";
+            prescriptionString += counter++ + ". " + getDrugOrderString(entry.getKey(), drugOrderDurationMap.get(entry.getKey()), locale) + "\n";
         }
         return prescriptionString;
     }
@@ -220,13 +238,13 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
         return StringUtils.collectionToCommaDelimitedString(providerSet);
     }
 
-    private String getDrugOrderString(BahmniDrugOrder drugOrder, Integer duration) {
+    private String getDrugOrderString(BahmniDrugOrder drugOrder, Integer duration, Locale locale) {
         String drugOrderString = drugOrder.getDrug().getName();
         drugOrderString += ", " + (drugOrder.getDosingInstructions().getDose().intValue()) + " " + drugOrder.getDosingInstructions().getDoseUnits();
         drugOrderString += ", " + drugOrder.getDosingInstructions().getFrequency() + "-" + duration.toString() + " " + drugOrder.getDurationUnits();
-        drugOrderString += ", start from " + convertUTCToGivenFormat(drugOrder.getEffectiveStartDate(), "dd-MM-yyyy", SMSProperties.getProperty("sms.timeZone"));
+        drugOrderString += ", start from " + convertUTCToGivenFormat(drugOrder.getEffectiveStartDate(), "dd-MM-yyyy", Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, locale));
         if(drugOrder.getDateStopped() != null)
-            drugOrderString += ", stopped on " + convertUTCToGivenFormat(drugOrder.getDateStopped(), "dd-MM-yyyy", SMSProperties.getProperty("sms.timeZone"));
+            drugOrderString += ", stopped on " + convertUTCToGivenFormat(drugOrder.getDateStopped(), "dd-MM-yyyy", Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, locale));
         return drugOrderString;
     }
 
@@ -246,6 +264,22 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
     private double getDateDifferenceInDays(Date date1, Date date2){
         long diff = date2.getTime() - date1.getTime();
         return (diff / (1000*60*60*24));
+    }
+
+    private Collection<Concept> getOrdAttributeConcepts() {
+        Concept orderAttribute = conceptService.getConceptByName(BahmniOrderAttribute.ORDER_ATTRIBUTES_CONCEPT_SET_NAME);
+        return orderAttribute == null ? Collections.EMPTY_LIST : orderAttribute.getSetMembers();
+    }
+
+    private List<BahmniDrugOrder> getBahmniDrugOrdersForVisit(String patientUuid, List<DrugOrder> drugOrders) {
+        Map<String, DrugOrder> drugOrderMap = getDiscontinuedDrugOrders(drugOrders);
+        try {
+            Collection<BahmniObservation> orderAttributeObs = bahmniObsService.observationsFor(patientUuid, getOrdAttributeConcepts(), null, null, false, null, null, null);
+            return bahmniDrugOrderMapper.mapToResponse(drugOrders, orderAttributeObs, drugOrderMap , null);
+        } catch (IOException e) {
+            logger.error("Could not parse drug order", e);
+            throw new RuntimeException("Could not parse drug order", e);
+        }
     }
 
     private List<EncounterTransaction.Concept> fetchOrderAttributeConcepts() {
@@ -280,7 +314,6 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
         return orderFrequencies.stream().map((orderFrequency) -> new OrderFrequencyData(orderFrequency))
                 .collect(Collectors.toList());
     }
-
 
     private List<DrugOrder> getActiveDrugOrders(String patientUuid, Date asOfDate, Set<Concept> conceptsToFilter,
                                                 Set<Concept> conceptsToExclude, Date startDate, Date endDate, Collection<Encounter> encounters) {

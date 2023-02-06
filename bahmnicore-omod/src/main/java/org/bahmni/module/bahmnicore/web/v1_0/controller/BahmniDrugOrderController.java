@@ -227,5 +227,4 @@ public class BahmniDrugOrderController extends BaseRestController {
 
         return groupedDrugOrders;
     }
-
 }

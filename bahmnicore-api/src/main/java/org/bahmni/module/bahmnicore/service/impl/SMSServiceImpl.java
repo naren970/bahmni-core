@@ -68,9 +68,9 @@ public class SMSServiceImpl implements SMSService {
                 patient.getGivenName() + " " + patient.getFamilyName(), patient.getGender(), patient.getAge().toString(),
                 providerDetail, location, prescriptionDetail};
         if (StringUtils.isBlank(smsTemplate)) {
-            return Context.getMessageSourceService().getMessage(PRESCRIPTION_SMS_TEMPLATE, arguments, new Locale(lang));
+            return Context.getMessageSourceService().getMessage(PRESCRIPTION_SMS_TEMPLATE, arguments, new Locale(lang)).replace("\\n", System.lineSeparator());
         } else {
-            return new MessageFormat(smsTemplate).format(arguments);
+            return new MessageFormat(smsTemplate).format(arguments).replace("\\n", System.lineSeparator());
         }
     }
 

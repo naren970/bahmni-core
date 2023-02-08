@@ -13,6 +13,7 @@ import org.openmrs.module.bahmniemrapi.drugorder.contract.BahmniDrugOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 import java.util.Locale;
@@ -37,10 +38,10 @@ public class SharePrescriptionServiceImpl implements SharePrescriptionService {
     @Authorized({"Send Prescription"})
     public Object sendPresciptionSMS(PrescriptionSMS prescription) {
         Visit visit = bahmniVisitService.getVisitSummary(prescription.getVisitUuid());
-        String locationName = bahmniVisitService.getParentLocationNameForVisit(visit.getLocation());
+        String locationName = bahmniVisitService.getParentLocationForVisit(visit.getLocation()).getName();
         List<BahmniDrugOrder> drugOrderList = drugOrderService.getBahmniDrugOrdersForVisit(visit.getPatient().getUuid(), visit.getUuid());
         Map<BahmniDrugOrder, String> mergedDrugOrderMap = drugOrderService.getMergedDrugOrderMap(drugOrderList);
-        String providerString = drugOrderService.getAllProviderAsString(drugOrderList);
+        String providerString = StringUtils.collectionToCommaDelimitedString(drugOrderService.getUniqueProviderNames(drugOrderList));
         String prescriptionString = drugOrderService.getPrescriptionAsString(mergedDrugOrderMap, new Locale(prescription.getLocale()));
         String prescriptionSMSContent = smsService.getPrescriptionMessage(prescription.getLocale(), visit.getStartDatetime(), visit.getPatient(), locationName, providerString, prescriptionString);
         return smsService.sendSMS(visit.getPatient().getAttribute("phoneNumber").getValue(), prescriptionSMSContent);

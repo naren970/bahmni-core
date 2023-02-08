@@ -13,5 +13,5 @@ public interface BahmniVisitService {
 
     List<Encounter> getAdmitAndDischargeEncounters(Integer visitId);
 
-    String getParentLocationNameForVisit(Location location);
+    Location getParentLocationForVisit(Location location);
 }

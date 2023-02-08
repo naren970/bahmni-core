@@ -23,6 +23,7 @@ import org.openmrs.module.bahmniemrapi.drugorder.contract.BahmniDrugOrder;
 import org.openmrs.module.emrapi.encounter.domain.EncounterTransaction;
 import org.powermock.core.classloader.annotations.PrepareForTest;
 import org.powermock.modules.junit4.PowerMockRunner;
+import org.springframework.util.StringUtils;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
@@ -146,6 +147,7 @@ public class BahmniDrugOrderServiceImplTest {
         mockStatic(Context.class);
         when(Context.getMessageSourceService()).thenReturn(messageSourceService);
         when(messageSourceService.getMessage("bahmni.sms.timezone", null, new Locale("en"))).thenReturn("IST");
+        when(messageSourceService.getMessage("bahmni.sms.dateformat", null, new Locale("en"))).thenReturn("dd-MM-yyyy");
         Date drugOrderStartDate = new SimpleDateFormat("MMMM d, yyyy", new Locale("en")).parse("January 30, 2023");
         EncounterTransaction.DrugOrder etDrugOrder = createETDrugOrder("1", "Paracetamol", 2.0, "Once a day", drugOrderStartDate, 5);
         BahmniDrugOrder bahmniDrugOrder = createBahmniDrugOrder(null, etDrugOrder);
@@ -157,9 +159,9 @@ public class BahmniDrugOrderServiceImplTest {
     }
 
     @Test
-    public void shouldReturnAllUniqueProvidersAsString() throws Exception {
+    public void shouldReturnAllUniqueProviderNames() throws Exception {
         List<BahmniDrugOrder> bahmniDrugOrderList = buildBahmniDrugOrderList();
-        String providerString = bahmniDrugOrderService.getAllProviderAsString(bahmniDrugOrderList);
+        String providerString = StringUtils.collectionToCommaDelimitedString(bahmniDrugOrderService.getUniqueProviderNames(bahmniDrugOrderList));
         String expectedProviderString = "Dr Harry,Dr Grace";
         assertEquals(expectedProviderString, providerString);
     }

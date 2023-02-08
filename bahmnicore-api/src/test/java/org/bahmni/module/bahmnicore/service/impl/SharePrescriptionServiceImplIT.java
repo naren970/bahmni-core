@@ -29,8 +29,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.Locale;
-import java.util.Set;
-import java.util.HashSet;
+import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 import static org.mockito.Mockito.when;
 import static org.mockito.Mockito.verify;
@@ -73,11 +73,12 @@ public class SharePrescriptionServiceImplIT {
 
         when(administrationService.getGlobalProperty("bahmni.prescriptionSMSTemplate")).thenReturn("Date: {0}\nPrescription For Patient: {1}, {2}, {3} years.\nDoctor: {4} ({5})\n{6}");
         when(messageSourceService.getMessage("bahmni.sms.timezone", null, new Locale("en"))).thenReturn("IST");
+        when(messageSourceService.getMessage("bahmni.sms.dateformat", null, new Locale("en"))).thenReturn("dd-MM-yyyy");
         when(messageSourceService.getMessage("bahmni.sms.url", null, new Locale("en"))).thenReturn(null);
         when(bahmniVisitService.getVisitSummary(prescriptionSMS.getVisitUuid())).thenReturn(visit);
-        when(bahmniVisitService.getParentLocationNameForVisit(visit.getLocation())).thenReturn(visit.getLocation().getName());
+        when(bahmniVisitService.getParentLocationForVisit(visit.getLocation())).thenReturn(visit.getLocation());
         when(bahmniDrugOrderService.getMergedDrugOrderMap(new ArrayList<BahmniDrugOrder>())).thenReturn(null);
-        when(bahmniDrugOrderService.getAllProviderAsString(new ArrayList<BahmniDrugOrder>())).thenReturn("Superman");
+        when(bahmniDrugOrderService.getUniqueProviderNames(new ArrayList<BahmniDrugOrder>())).thenReturn(Stream.of("Superman").collect(Collectors.toSet()));
         when(bahmniDrugOrderService.getPrescriptionAsString(null, new Locale("en"))).thenReturn("1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023");
         when(smsService.getPrescriptionMessage(prescriptionSMS.getLocale(), visit.getStartDatetime(), visit.getPatient(),
                 "Bahmni", "Superman", "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023"))
@@ -97,9 +98,7 @@ public class SharePrescriptionServiceImplIT {
         PersonAttributeType pat = new PersonAttributeType();
         pat.setName("phoneNumber");
         pa.setAttributeType(pat);
-        Set<PersonAttribute> paSet = new HashSet<>();
-        paSet.add(pa);
-        person.setAttributes(paSet);
+        person.setAttributes(Stream.of(pa).collect(Collectors.toSet()));
 
         Visit visit = new VisitBuilder().withPerson(person).withUUID("visit-uuid").withStartDatetime(visitDate).build();
         Location location = new Location();

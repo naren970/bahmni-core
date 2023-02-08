@@ -32,7 +32,6 @@ import org.openmrs.module.emrapi.encounter.domain.EncounterTransaction;
 import org.openmrs.module.emrapi.utils.HibernateLazyLoader;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
-import org.springframework.util.StringUtils;
 
 import java.io.IOException;
 import java.text.ParseException;
@@ -45,6 +44,7 @@ import java.util.Map;
 import java.util.LinkedHashMap;
 import java.util.Set;
 import java.util.LinkedHashSet;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 import java.util.Locale;
 import java.util.Arrays;
@@ -66,6 +66,7 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
     private static final String GP_DOSING_INSTRUCTIONS_CONCEPT_UUID = "order.dosingInstructionsConceptUuid";
     private static Logger logger = LogManager.getLogger(BahmniDrugOrderService.class);
     private final static String SMS_TIMEZONE = "bahmni.sms.timezone";
+    private final static String SMS_DATEFORMAT = "bahmni.sms.dateformat";
 
     @Autowired
     public BahmniDrugOrderServiceImpl(ConceptService conceptService, OrderService orderService, PatientService patientService, OrderDao orderDao,
@@ -227,27 +228,28 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
         String prescriptionString = "";
         int counter = 1;
         for (Map.Entry<BahmniDrugOrder, String> entry : drugOrderDurationMap.entrySet()) {
-            prescriptionString += counter++ + ". " + getDrugOrderString(entry.getKey(), drugOrderDurationMap.get(entry.getKey()), locale) + "\n";
+            prescriptionString += counter++ + ". " + getDrugOrderAsString(entry.getKey(), drugOrderDurationMap.get(entry.getKey()), locale) + "\n";
         }
         return prescriptionString;
     }
 
-    @Override
-    public String getAllProviderAsString(List<BahmniDrugOrder> drugOrders) {
+    public Set getUniqueProviderNames(List<BahmniDrugOrder> drugOrders) {
         Set providerSet = new LinkedHashSet();
         for (BahmniDrugOrder drugOrder : drugOrders) {
             providerSet.add("Dr " + drugOrder.getProvider().getName());
         }
-        return StringUtils.collectionToCommaDelimitedString(providerSet);
+        return providerSet;
     }
 
-    private String getDrugOrderString(BahmniDrugOrder drugOrder, String duration, Locale locale) {
+    private String getDrugOrderAsString(BahmniDrugOrder drugOrder, String duration, Locale locale) {
         String drugOrderString = drugOrder.getDrug().getName();
         drugOrderString += ", " + (drugOrder.getDosingInstructions().getDose().intValue()) + " " + drugOrder.getDosingInstructions().getDoseUnits();
         drugOrderString += ", " + drugOrder.getDosingInstructions().getFrequency() + "-" + duration;
-        drugOrderString += ", start from " + convertUTCToGivenFormat(drugOrder.getEffectiveStartDate(), "dd-MM-yyyy", Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, locale));
+        drugOrderString += ", start from " + convertUTCToGivenFormat(drugOrder.getEffectiveStartDate(),
+                Context.getMessageSourceService().getMessage(SMS_DATEFORMAT, null, locale), Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, locale));
         if(drugOrder.getDateStopped() != null)
-            drugOrderString += ", stopped on " + convertUTCToGivenFormat(drugOrder.getDateStopped(), "dd-MM-yyyy", Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, locale));
+            drugOrderString += ", stopped on " + convertUTCToGivenFormat(drugOrder.getDateStopped(),
+                    Context.getMessageSourceService().getMessage(SMS_DATEFORMAT, null, locale), Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, locale));
         return drugOrderString;
     }
 
@@ -266,7 +268,7 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
 
     private double getDateDifferenceInDays(Date date1, Date date2){
         long diff = date2.getTime() - date1.getTime();
-        return (diff / (1000*60*60*24));
+        return TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
     }
 
     private Collection<Concept> getOrdAttributeConcepts() {

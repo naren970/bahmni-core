@@ -55,6 +55,7 @@ public class SMSServiceImplIT {
     public void shouldReturnPrescriptionSMSWithGlobalPropertyTemplate() throws ParseException {
         when(administrationService.getGlobalProperty("bahmni.prescriptionSMSTemplate")).thenReturn("Date: {0}\nPrescription For Patient: {1}, {2}, {3} years.\nDoctor: {4} ({5})\n{6}");
         when(messageSourceService.getMessage("bahmni.sms.timezone", null, new Locale("en"))).thenReturn("IST");
+        when(messageSourceService.getMessage("bahmni.sms.dateformat", null, new Locale("en"))).thenReturn("dd-MM-yyyy");
         Date visitDate = new SimpleDateFormat("MMMM d, yyyy", new Locale("en")).parse("January 30, 2023");
         Date birthDate = new SimpleDateFormat("MMMM d, yyyy", new Locale("en")).parse("January 30, 2010");
         Person person = new PersonBuilder().withUUID("puuid").withPersonName("testPersonName").build();
@@ -76,6 +77,7 @@ public class SMSServiceImplIT {
         when(administrationService.getGlobalProperty("bahmni.prescriptionSMSTemplate")).thenReturn(null);
         when(messageSourceService.getMessage("bahmni.prescriptionSMSTemplate", args, new Locale("en"))).thenReturn("Date: 30-01-2023\nPrescription For Patient: testPersonName null, M, 13 years.\nDoctor: Superman (Bahmni)\n1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023");
         when(messageSourceService.getMessage("bahmni.sms.timezone", null, new Locale("en"))).thenReturn("IST");
+        when(messageSourceService.getMessage("bahmni.sms.dateformat", null, new Locale("en"))).thenReturn("dd-MM-yyyy");
         Date visitDate = new SimpleDateFormat("MMMM d, yyyy", new Locale("en")).parse("January 30, 2023");
         Date birthDate = new SimpleDateFormat("MMMM d, yyyy", new Locale("en")).parse("January 30, 2010");
         Person person = new PersonBuilder().withUUID("puuid").withPersonName("testPersonName").build();

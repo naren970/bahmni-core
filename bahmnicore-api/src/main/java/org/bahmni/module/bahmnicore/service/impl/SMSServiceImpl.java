@@ -30,6 +30,7 @@ public class SMSServiceImpl implements SMSService {
     private static Logger logger = LogManager.getLogger(BahmniDrugOrderService.class);
     private final static String PRESCRIPTION_SMS_TEMPLATE = "bahmni.prescriptionSMSTemplate";
     private final static String SMS_TIMEZONE = "bahmni.sms.timezone";
+    private final static String SMS_DATEFORMAT = "bahmni.sms.dateformat";
     private final static String SMS_URL = "bahmni.sms.url";
 
     public SMSServiceImpl() {}
@@ -61,8 +62,9 @@ public class SMSServiceImpl implements SMSService {
     @Override
     public String getPrescriptionMessage(String lang, Date visitDate, Patient patient, String location, String providerDetail, String prescriptionDetail) {
         String smsTimeZone = Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, new Locale(lang));
+        String smsDateFormat = Context.getMessageSourceService().getMessage(SMS_DATEFORMAT, null, new Locale(lang));
         String smsTemplate = Context.getAdministrationService().getGlobalProperty(PRESCRIPTION_SMS_TEMPLATE);
-        Object[] arguments = {convertUTCToGivenFormat(visitDate, "dd-MM-yyyy", smsTimeZone),
+        Object[] arguments = {convertUTCToGivenFormat(visitDate, smsDateFormat, smsTimeZone),
                 patient.getGivenName() + " " + patient.getFamilyName(), patient.getGender(), patient.getAge().toString(),
                 providerDetail, location, prescriptionDetail};
         if (StringUtils.isBlank(smsTemplate)) {

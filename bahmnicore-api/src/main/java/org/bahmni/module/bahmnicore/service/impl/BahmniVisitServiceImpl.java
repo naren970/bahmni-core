@@ -36,9 +36,9 @@ public class BahmniVisitServiceImpl implements BahmniVisitService {
     }
 
     @Override
-    public String getParentLocationNameForVisit(Location location) {
+    public Location getParentLocationForVisit(Location location) {
         if(location.getParentLocation()!=null)
-            getParentLocationNameForVisit(location.getParentLocation());
-        return location.getName();
+            getParentLocationForVisit(location.getParentLocation());
+        return location;
     }
 }

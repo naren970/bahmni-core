@@ -46,6 +46,6 @@ public interface BahmniDrugOrderService {
 
     String getPrescriptionAsString(Map<BahmniDrugOrder, String> drugOrderDurationMap, Locale locale);
 
-    String getAllProviderAsString(List<BahmniDrugOrder> drugOrders);
+    Set getUniqueProviderNames(List<BahmniDrugOrder> drugOrders);
 
 }

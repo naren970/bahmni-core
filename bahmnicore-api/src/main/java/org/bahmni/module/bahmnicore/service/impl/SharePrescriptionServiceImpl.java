@@ -43,7 +43,8 @@ public class SharePrescriptionServiceImpl implements SharePrescriptionService {
         Map<BahmniDrugOrder, String> mergedDrugOrderMap = drugOrderService.getMergedDrugOrderMap(drugOrderList);
         String providerString = StringUtils.collectionToCommaDelimitedString(drugOrderService.getUniqueProviderNames(drugOrderList));
         String prescriptionString = drugOrderService.getPrescriptionAsString(mergedDrugOrderMap, new Locale(prescription.getLocale()));
-        String prescriptionSMSContent = smsService.getPrescriptionMessage(prescription.getLocale(), visit.getStartDatetime(), visit.getPatient(), locationName, providerString, prescriptionString);
+        Object[] prescriptionArguments = {prescription.getLocale(), visit.getStartDatetime(), visit.getPatient(), locationName, providerString, prescriptionString};
+        String prescriptionSMSContent = smsService.getPrescriptionMessage(prescriptionArguments);
         return smsService.sendSMS(visit.getPatient().getAttribute("phoneNumber").getValue(), prescriptionSMSContent);
     }
 

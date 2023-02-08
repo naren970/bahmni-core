@@ -179,51 +179,54 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
     }
 
     @Override
-    public List<BahmniDrugOrder> getSortedBahmniDrugOrdersForVisit(String patientUuid, String visitUuid) {
-        List<DrugOrder> drugOrderList = getPrescribedDrugOrders(Arrays.asList(visitUuid), patientUuid, null,null, null, null, null);
-        List<BahmniDrugOrder> bahmniDrugOrderList = getBahmniDrugOrdersForVisit(patientUuid, drugOrderList);
-        Collections.sort(bahmniDrugOrderList, new Comparator<BahmniDrugOrder>() {
-            @Override
-            public int compare(BahmniDrugOrder o1, BahmniDrugOrder o2) {
-                return o1.getEffectiveStartDate().compareTo(o2.getEffectiveStartDate());
-            }
-        });
-        return bahmniDrugOrderList;
+    public List<BahmniDrugOrder> getBahmniDrugOrdersForVisit(String patientUuid, String visitUuid) {
+        try {
+            List<DrugOrder> drugOrderList = getPrescribedDrugOrders(Arrays.asList(visitUuid), patientUuid, null,null, null, null, null);
+            Map<String, DrugOrder> drugOrderMap = getDiscontinuedDrugOrders(drugOrderList);
+            Collection<BahmniObservation> orderAttributeObs = bahmniObsService.observationsFor(patientUuid, getOrdAttributeConcepts(), null, null, false, null, null, null);
+            List<BahmniDrugOrder> bahmniDrugOrderList = bahmniDrugOrderMapper.mapToResponse(drugOrderList, orderAttributeObs, drugOrderMap , null);
+            Collections.sort(bahmniDrugOrderList, new Comparator<BahmniDrugOrder>() {
+                @Override
+                public int compare(BahmniDrugOrder o1, BahmniDrugOrder o2) {
+                    return o1.getEffectiveStartDate().compareTo(o2.getEffectiveStartDate());
+                }
+            });
+            return bahmniDrugOrderList;
+        } catch (IOException e) {
+            logger.error("Could not parse drug order", e);
+            throw new RuntimeException("Could not parse drug order", e);
+        }
     }
 
     @Override
-    public Map<BahmniDrugOrder, Integer> getMergedDrugOrderMap(List<BahmniDrugOrder> drugOrderList) {
-        Map<BahmniDrugOrder, Integer> mergedDrugOrderMap = new LinkedHashMap<>();
+    public Map<BahmniDrugOrder, String> getMergedDrugOrderMap(List<BahmniDrugOrder> drugOrderList) {
+        Map<BahmniDrugOrder, String> mergedDrugOrderMap = new LinkedHashMap<>();
         for(BahmniDrugOrder drugOrder : drugOrderList) {
             BahmniDrugOrder foundDrugOrder = mergedDrugOrderMap.entrySet().stream()
                     .map(x -> x.getKey())
                     .filter( existingOrder ->
-                            areValuesEqual(existingOrder.getDrugNonCoded(), drugOrder.getDrugNonCoded()) &&
-                                    (existingOrder.getDrug()!=null && drugOrder.getDrug()!=null &&
-                                            areValuesEqual(existingOrder.getDrug().getUuid(), drugOrder.getDrug().getUuid())) &&
-                                    areValuesEqual(existingOrder.getInstructions(), drugOrder.getInstructions()) &&
-                                    compareDosingInstruction(existingOrder.getDosingInstructions(), drugOrder.getDosingInstructions()) &&
-                                    areValuesEqual(existingOrder.getDosingInstructions().getRoute(), drugOrder.getDosingInstructions().getRoute()) &&
-                                    areValuesEqual(existingOrder.getDosingInstructions().getAdministrationInstructions(), drugOrder.getDosingInstructions().getAdministrationInstructions()) &&
-                                    areValuesEqual(existingOrder.getDosingInstructions().getAsNeeded(), drugOrder.getDosingInstructions().getAsNeeded()) &&
-                                    areValuesEqual(existingOrder.getDateStopped(), drugOrder.getDateStopped()) &&
-                                    getDateDifferenceInDays(existingOrder.getEffectiveStopDate(), drugOrder.getEffectiveStartDate()) <= 1.0 )
+                            compareDrugOrders(existingOrder, drugOrder) )
                     .findFirst()
                     .orElse(null);
             if (foundDrugOrder!=null) {
-                mergedDrugOrderMap.put(foundDrugOrder, mergedDrugOrderMap.get(foundDrugOrder)+drugOrder.getDuration());
+                String durationWithUnits = mergedDrugOrderMap.get(foundDrugOrder);
+                if(drugOrder.getDurationUnits() == foundDrugOrder.getDurationUnits())
+                    durationWithUnits = (foundDrugOrder.getDuration()+drugOrder.getDuration()) + " " + drugOrder.getDurationUnits();
+                else
+                    durationWithUnits += " + " + drugOrder.getDuration() + " " + drugOrder.getDurationUnits();
+                mergedDrugOrderMap.put(foundDrugOrder, durationWithUnits);
             } else {
-                mergedDrugOrderMap.put(drugOrder, drugOrder.getDuration());
+                mergedDrugOrderMap.put(drugOrder, drugOrder.getDuration()+" "+drugOrder.getDurationUnits());
             }
         }
         return mergedDrugOrderMap;
     }
 
     @Override
-    public String getPrescriptionAsString(Map<BahmniDrugOrder, Integer> drugOrderDurationMap, Locale locale) {
+    public String getPrescriptionAsString(Map<BahmniDrugOrder, String> drugOrderDurationMap, Locale locale) {
         String prescriptionString = "";
         int counter = 1;
-        for (Map.Entry<BahmniDrugOrder, Integer> entry : drugOrderDurationMap.entrySet()) {
+        for (Map.Entry<BahmniDrugOrder, String> entry : drugOrderDurationMap.entrySet()) {
             prescriptionString += counter++ + ". " + getDrugOrderString(entry.getKey(), drugOrderDurationMap.get(entry.getKey()), locale) + "\n";
         }
         return prescriptionString;
@@ -238,10 +241,10 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
         return StringUtils.collectionToCommaDelimitedString(providerSet);
     }
 
-    private String getDrugOrderString(BahmniDrugOrder drugOrder, Integer duration, Locale locale) {
+    private String getDrugOrderString(BahmniDrugOrder drugOrder, String duration, Locale locale) {
         String drugOrderString = drugOrder.getDrug().getName();
         drugOrderString += ", " + (drugOrder.getDosingInstructions().getDose().intValue()) + " " + drugOrder.getDosingInstructions().getDoseUnits();
-        drugOrderString += ", " + drugOrder.getDosingInstructions().getFrequency() + "-" + duration.toString() + " " + drugOrder.getDurationUnits();
+        drugOrderString += ", " + drugOrder.getDosingInstructions().getFrequency() + "-" + duration;
         drugOrderString += ", start from " + convertUTCToGivenFormat(drugOrder.getEffectiveStartDate(), "dd-MM-yyyy", Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, locale));
         if(drugOrder.getDateStopped() != null)
             drugOrderString += ", stopped on " + convertUTCToGivenFormat(drugOrder.getDateStopped(), "dd-MM-yyyy", Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, locale));
@@ -269,17 +272,6 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
     private Collection<Concept> getOrdAttributeConcepts() {
         Concept orderAttribute = conceptService.getConceptByName(BahmniOrderAttribute.ORDER_ATTRIBUTES_CONCEPT_SET_NAME);
         return orderAttribute == null ? Collections.EMPTY_LIST : orderAttribute.getSetMembers();
-    }
-
-    private List<BahmniDrugOrder> getBahmniDrugOrdersForVisit(String patientUuid, List<DrugOrder> drugOrders) {
-        Map<String, DrugOrder> drugOrderMap = getDiscontinuedDrugOrders(drugOrders);
-        try {
-            Collection<BahmniObservation> orderAttributeObs = bahmniObsService.observationsFor(patientUuid, getOrdAttributeConcepts(), null, null, false, null, null, null);
-            return bahmniDrugOrderMapper.mapToResponse(drugOrders, orderAttributeObs, drugOrderMap , null);
-        } catch (IOException e) {
-            logger.error("Could not parse drug order", e);
-            throw new RuntimeException("Could not parse drug order", e);
-        }
     }
 
     private List<EncounterTransaction.Concept> fetchOrderAttributeConcepts() {
@@ -336,4 +328,16 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
         return drugOrders;
     }
 
+    private boolean compareDrugOrders(BahmniDrugOrder existingOrder, BahmniDrugOrder newDrugOrder) {
+        return (existingOrder.getDrug()!=null && newDrugOrder.getDrug()!=null &&
+                areValuesEqual(existingOrder.getDrug().getUuid(), newDrugOrder.getDrug().getUuid())) &&
+                areValuesEqual(existingOrder.getDrugNonCoded(), newDrugOrder.getDrugNonCoded()) &&
+                areValuesEqual(existingOrder.getInstructions(), newDrugOrder.getInstructions()) &&
+                compareDosingInstruction(existingOrder.getDosingInstructions(), newDrugOrder.getDosingInstructions()) &&
+                areValuesEqual(existingOrder.getDosingInstructions().getRoute(), newDrugOrder.getDosingInstructions().getRoute()) &&
+                areValuesEqual(existingOrder.getDosingInstructions().getAdministrationInstructions(), newDrugOrder.getDosingInstructions().getAdministrationInstructions()) &&
+                areValuesEqual(existingOrder.getDosingInstructions().getAsNeeded(), newDrugOrder.getDosingInstructions().getAsNeeded()) &&
+                areValuesEqual(existingOrder.getDateStopped(), newDrugOrder.getDateStopped()) &&
+                getDateDifferenceInDays(existingOrder.getEffectiveStopDate(), newDrugOrder.getEffectiveStartDate()) <= 1.0 ;
+    }
 }

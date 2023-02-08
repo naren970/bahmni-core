@@ -40,11 +40,11 @@ public interface BahmniDrugOrderService {
     List<BahmniDrugOrder> getDrugOrders(String patientUuid, Boolean isActive, Set<Concept> conceptsToFilter, Set<Concept> conceptsToExclude,
                                         String patientProgramUuid) throws ParseException;
 
-    List<BahmniDrugOrder> getSortedBahmniDrugOrdersForVisit(String patientUuid, String visitUuid);
+    List<BahmniDrugOrder> getBahmniDrugOrdersForVisit(String patientUuid, String visitUuid);
 
-    Map<BahmniDrugOrder, Integer> getMergedDrugOrderMap(List<BahmniDrugOrder> drugOrderList);
+    Map<BahmniDrugOrder, String> getMergedDrugOrderMap(List<BahmniDrugOrder> drugOrderList);
 
-    String getPrescriptionAsString(Map<BahmniDrugOrder, Integer> drugOrderDurationMap, Locale locale);
+    String getPrescriptionAsString(Map<BahmniDrugOrder, String> drugOrderDurationMap, Locale locale);
 
     String getAllProviderAsString(List<BahmniDrugOrder> drugOrders);
 

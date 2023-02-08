@@ -1,6 +1,9 @@
 package org.bahmni.module.bahmnicore.service.impl;
 
 import org.apache.commons.lang.StringUtils;
+import org.apache.http.HttpResponse;
+import org.apache.http.impl.client.CloseableHttpClient;
+import org.apache.http.impl.client.HttpClients;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -10,7 +13,6 @@ import org.bahmni.module.bahmnicore.service.SMSService;
 import org.openmrs.Patient;
 
 import org.openmrs.api.context.Context;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.text.MessageFormat;
@@ -20,11 +22,8 @@ import java.util.Locale;
 import static org.bahmni.module.bahmnicore.util.BahmniDateUtil.convertUTCToGivenFormat;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.apache.http.HttpResponse;
-import org.apache.http.client.HttpClient;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.entity.StringEntity;
-import org.apache.http.impl.client.HttpClientBuilder;
 
 @Service
 public class SMSServiceImpl implements SMSService {
@@ -33,7 +32,6 @@ public class SMSServiceImpl implements SMSService {
     private final static String SMS_TIMEZONE = "bahmni.sms.timezone";
     private final static String SMS_URL = "bahmni.sms.url";
 
-    @Autowired
     public SMSServiceImpl() {}
 
     @Override
@@ -50,9 +48,9 @@ public class SMSServiceImpl implements SMSService {
             HttpPost request = new HttpPost(Context.getMessageSourceService().getMessage(SMS_URL, null, new Locale("en")));
             request.addHeader("content-type", "application/json");
             request.setEntity(params);
-            HttpClient httpClient = HttpClientBuilder.create().build();
+            CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpResponse response = httpClient.execute(request);
-
+            httpClient.close();
             return response.getStatusLine();
         } catch (Exception e) {
             logger.error("Exception occured in sending sms ", e);

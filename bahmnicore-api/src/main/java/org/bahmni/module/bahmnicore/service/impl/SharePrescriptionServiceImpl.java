@@ -8,9 +8,11 @@ import org.bahmni.module.bahmnicore.service.BahmniVisitService;
 import org.bahmni.module.bahmnicore.service.SMSService;
 import org.bahmni.module.bahmnicore.service.SharePrescriptionService;
 import org.openmrs.Visit;
+import org.openmrs.annotation.Authorized;
 import org.openmrs.module.bahmniemrapi.drugorder.contract.BahmniDrugOrder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Locale;
@@ -31,11 +33,13 @@ public class SharePrescriptionServiceImpl implements SharePrescriptionService {
     }
 
     @Override
+    @Transactional(readOnly = true)
+    @Authorized({"Send Prescription"})
     public Object sendPresciptionSMS(PrescriptionSMS prescription) {
         Visit visit = bahmniVisitService.getVisitSummary(prescription.getVisitUuid());
         String locationName = bahmniVisitService.getParentLocationNameForVisit(visit.getLocation());
-        List<BahmniDrugOrder> drugOrderList = drugOrderService.getSortedBahmniDrugOrdersForVisit(visit.getPatient().getUuid(), visit.getUuid());
-        Map<BahmniDrugOrder, Integer> mergedDrugOrderMap = drugOrderService.getMergedDrugOrderMap(drugOrderList);
+        List<BahmniDrugOrder> drugOrderList = drugOrderService.getBahmniDrugOrdersForVisit(visit.getPatient().getUuid(), visit.getUuid());
+        Map<BahmniDrugOrder, String> mergedDrugOrderMap = drugOrderService.getMergedDrugOrderMap(drugOrderList);
         String providerString = drugOrderService.getAllProviderAsString(drugOrderList);
         String prescriptionString = drugOrderService.getPrescriptionAsString(mergedDrugOrderMap, new Locale(prescription.getLocale()));
         String prescriptionSMSContent = smsService.getPrescriptionMessage(prescription.getLocale(), visit.getStartDatetime(), visit.getPatient(), locationName, providerString, prescriptionString);

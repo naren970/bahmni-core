@@ -134,10 +134,10 @@ public class BahmniDrugOrderServiceImplTest {
     @Test
     public void shouldReturnMergedDrugOrderAsMap() throws Exception {
         List<BahmniDrugOrder> bahmniDrugOrderList = buildBahmniDrugOrderList();
-        Map<BahmniDrugOrder, Integer> mergedDrugOrderMap = bahmniDrugOrderService.getMergedDrugOrderMap(bahmniDrugOrderList);
-        Map<BahmniDrugOrder, Integer> expectedMergedDrugOrderMap = new LinkedHashMap<>();
-        expectedMergedDrugOrderMap.put(bahmniDrugOrderList.get(0), 10);
-        expectedMergedDrugOrderMap.put(bahmniDrugOrderList.get(2), 3);
+        Map<BahmniDrugOrder, String> mergedDrugOrderMap = bahmniDrugOrderService.getMergedDrugOrderMap(bahmniDrugOrderList);
+        Map<BahmniDrugOrder, String> expectedMergedDrugOrderMap = new LinkedHashMap<>();
+        expectedMergedDrugOrderMap.put(bahmniDrugOrderList.get(0), "10 Days");
+        expectedMergedDrugOrderMap.put(bahmniDrugOrderList.get(2), "3 Days");
         assertEquals(expectedMergedDrugOrderMap, mergedDrugOrderMap);
     }
 
@@ -149,8 +149,8 @@ public class BahmniDrugOrderServiceImplTest {
         Date drugOrderStartDate = new SimpleDateFormat("MMMM d, yyyy", new Locale("en")).parse("January 30, 2023");
         EncounterTransaction.DrugOrder etDrugOrder = createETDrugOrder("1", "Paracetamol", 2.0, "Once a day", drugOrderStartDate, 5);
         BahmniDrugOrder bahmniDrugOrder = createBahmniDrugOrder(null, etDrugOrder);
-        Map<BahmniDrugOrder, Integer> drugOrderDurationMap = new LinkedHashMap<>();
-        drugOrderDurationMap.put(bahmniDrugOrder, 10);
+        Map<BahmniDrugOrder, String> drugOrderDurationMap = new LinkedHashMap<>();
+        drugOrderDurationMap.put(bahmniDrugOrder, "10 Days");
         String prescriptionString = bahmniDrugOrderService.getPrescriptionAsString(drugOrderDurationMap, new Locale("en"));
         String expectedPrescriptionString = "1. Paracetamol, 2 tab (s), Once a day-10 Days, start from 30-01-2023\n";
         assertEquals(expectedPrescriptionString, prescriptionString);

@@ -184,7 +184,7 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
         try {
             List<DrugOrder> drugOrderList = getPrescribedDrugOrders(Arrays.asList(visitUuid), patientUuid, null,null, null, null, null);
             Map<String, DrugOrder> drugOrderMap = getDiscontinuedDrugOrders(drugOrderList);
-            Collection<BahmniObservation> orderAttributeObs = bahmniObsService.observationsFor(patientUuid, getOrdAttributeConcepts(), null, null, false, null, null, null);
+            Collection<BahmniObservation> orderAttributeObs = bahmniObsService.observationsFor(patientUuid, getOrderAttributeConcepts(), null, null, false, null, null, null);
             List<BahmniDrugOrder> bahmniDrugOrderList = bahmniDrugOrderMapper.mapToResponse(drugOrderList, orderAttributeObs, drugOrderMap , null);
             Collections.sort(bahmniDrugOrderList, new Comparator<BahmniDrugOrder>() {
                 @Override
@@ -271,7 +271,7 @@ public class BahmniDrugOrderServiceImpl implements BahmniDrugOrderService {
         return TimeUnit.DAYS.convert(diff, TimeUnit.MILLISECONDS);
     }
 
-    private Collection<Concept> getOrdAttributeConcepts() {
+    private Collection<Concept> getOrderAttributeConcepts() {
         Concept orderAttribute = conceptService.getConceptByName(BahmniOrderAttribute.ORDER_ATTRIBUTES_CONCEPT_SET_NAME);
         return orderAttribute == null ? Collections.EMPTY_LIST : orderAttribute.getSetMembers();
     }

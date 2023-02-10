@@ -6,7 +6,7 @@ import java.util.Date;
 
 public interface SMSService {
 
-    String getPrescriptionMessage(Object[] prescriptionArguments);
+    String getPrescriptionMessage(String lang, Date visitDate, Patient patient, String location, String providerDetail, String prescriptionDetail);
 
     Object sendSMS(String phoneNumber, String message);
 }

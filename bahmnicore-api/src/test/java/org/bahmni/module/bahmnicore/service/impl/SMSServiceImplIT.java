@@ -62,8 +62,8 @@ public class SMSServiceImplIT {
         person.setGender("M");
         person.setBirthdate(birthDate);
         Visit visit = new VisitBuilder().withPerson(person).withUUID("vuuid").withStartDatetime(visitDate).build();
-        Object[] prescriptionArguments = {"en", visit.getStartDatetime(), visit.getPatient(), "Bahmni", "Superman", "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023"};
-                String prescriptionContent = smsService.getPrescriptionMessage(prescriptionArguments);
+
+        String prescriptionContent = smsService.getPrescriptionMessage("en", visit.getStartDatetime(), visit.getPatient(), "Bahmni", "Superman", "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023");
         String expectedPrescriptionContent = "Date: 30-01-2023\n" +
                 "Prescription For Patient: testPersonName null, M, 13 years.\n" +
                 "Doctor: Superman (Bahmni)\n" +
@@ -73,9 +73,9 @@ public class SMSServiceImplIT {
 
     @Test
     public void shouldReturnPrescriptionSMSWithDefaultTemplate() throws ParseException {
-        Object[] arguments = {"30-01-2023", "testPersonName null", "M", "13", "Superman", "Bahmni", "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023"};
+        Object[] args = {"30-01-2023", "testPersonName null", "M", "13", "Superman", "Bahmni", "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023"};
         when(administrationService.getGlobalProperty("bahmni.prescriptionSMSTemplate")).thenReturn(null);
-        when(messageSourceService.getMessage("bahmni.prescriptionSMSTemplate", arguments, new Locale("en"))).thenReturn("Date: 30-01-2023\nPrescription For Patient: testPersonName null, M, 13 years.\nDoctor: Superman (Bahmni)\n1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023");
+        when(messageSourceService.getMessage("bahmni.prescriptionSMSTemplate", args, new Locale("en"))).thenReturn("Date: 30-01-2023\nPrescription For Patient: testPersonName null, M, 13 years.\nDoctor: Superman (Bahmni)\n1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023");
         when(messageSourceService.getMessage("bahmni.sms.timezone", null, new Locale("en"))).thenReturn("IST");
         when(messageSourceService.getMessage("bahmni.sms.dateformat", null, new Locale("en"))).thenReturn("dd-MM-yyyy");
         Date visitDate = new SimpleDateFormat("MMMM d, yyyy", new Locale("en")).parse("January 30, 2023");
@@ -84,8 +84,8 @@ public class SMSServiceImplIT {
         person.setGender("M");
         person.setBirthdate(birthDate);
         Visit visit = new VisitBuilder().withPerson(person).withUUID("vuuid").withStartDatetime(visitDate).build();
-        Object[] prescriptionArguments = {"en", visit.getStartDatetime(), visit.getPatient(), "Bahmni", "Superman", "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023"};
-        String prescriptionContent = smsService.getPrescriptionMessage(prescriptionArguments);
+
+        String prescriptionContent = smsService.getPrescriptionMessage("en", visit.getStartDatetime(), visit.getPatient(), "Bahmni", "Superman", "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023");
         String expectedPrescriptionContent = "Date: 30-01-2023\n" +
                 "Prescription For Patient: testPersonName null, M, 13 years.\n" +
                 "Doctor: Superman (Bahmni)\n" +

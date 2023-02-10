@@ -70,7 +70,7 @@ public class SharePrescriptionServiceImplIT {
                 "Prescription For Patient: testPersonName null, M, 13 years.\n" +
                 "Doctor: Superman (Bahmni)\n" +
                 "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023";
-        Object[] prescriptionArguments = {prescriptionSMS.getLocale(), visit.getStartDatetime(), visit.getPatient(), "Bahmni", "Superman", "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023"};
+
         when(administrationService.getGlobalProperty("bahmni.prescriptionSMSTemplate")).thenReturn("Date: {0}\nPrescription For Patient: {1}, {2}, {3} years.\nDoctor: {4} ({5})\n{6}");
         when(messageSourceService.getMessage("bahmni.sms.timezone", null, new Locale("en"))).thenReturn("IST");
         when(messageSourceService.getMessage("bahmni.sms.dateformat", null, new Locale("en"))).thenReturn("dd-MM-yyyy");
@@ -80,7 +80,9 @@ public class SharePrescriptionServiceImplIT {
         when(bahmniDrugOrderService.getMergedDrugOrderMap(new ArrayList<BahmniDrugOrder>())).thenReturn(null);
         when(bahmniDrugOrderService.getUniqueProviderNames(new ArrayList<BahmniDrugOrder>())).thenReturn(Stream.of("Superman").collect(Collectors.toSet()));
         when(bahmniDrugOrderService.getPrescriptionAsString(null, new Locale("en"))).thenReturn("1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023");
-        when(smsService.getPrescriptionMessage(prescriptionArguments)).thenReturn(sampleSMSContent);
+        when(smsService.getPrescriptionMessage(prescriptionSMS.getLocale(), visit.getStartDatetime(), visit.getPatient(),
+                "Bahmni", "Superman", "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023"))
+                .thenReturn(sampleSMSContent);
         sharePrescriptionService.sendPresciptionSMS(prescriptionSMS);
         verify(smsService, times(1)).sendSMS("+919999999999", sampleSMSContent);
     }

@@ -60,16 +60,15 @@ public class SMSServiceImpl implements SMSService {
     }
 
     @Override
-    public String getPrescriptionMessage(Object[] prescriptionArguments) {
-        String smsTimeZone = Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, new Locale((String) prescriptionArguments[0]));
-        String smsDateFormat = Context.getMessageSourceService().getMessage(SMS_DATEFORMAT, null, new Locale((String) prescriptionArguments[0]));
+    public String getPrescriptionMessage(String lang, Date visitDate, Patient patient, String location, String providerDetail, String prescriptionDetail) {
+        String smsTimeZone = Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, new Locale(lang));
+        String smsDateFormat = Context.getMessageSourceService().getMessage(SMS_DATEFORMAT, null, new Locale(lang));
         String smsTemplate = Context.getAdministrationService().getGlobalProperty(PRESCRIPTION_SMS_TEMPLATE);
-        Patient patient = (Patient) prescriptionArguments[2];
-        Object[] arguments = {convertUTCToGivenFormat((Date) prescriptionArguments[1], smsDateFormat, smsTimeZone),
+        Object[] arguments = {convertUTCToGivenFormat(visitDate, smsDateFormat, smsTimeZone),
                 patient.getGivenName() + " " + patient.getFamilyName(), patient.getGender(), patient.getAge().toString(),
-                (String) prescriptionArguments[4], (String) prescriptionArguments[3], (String) prescriptionArguments[5]};
+                providerDetail, location, prescriptionDetail};
         if (StringUtils.isBlank(smsTemplate)) {
-            return Context.getMessageSourceService().getMessage(PRESCRIPTION_SMS_TEMPLATE, arguments, new Locale((String) prescriptionArguments[0])).replace("\\n", System.lineSeparator());
+            return Context.getMessageSourceService().getMessage(PRESCRIPTION_SMS_TEMPLATE, arguments, new Locale(lang)).replace("\\n", System.lineSeparator());
         } else {
             return new MessageFormat(smsTemplate).format(arguments).replace("\\n", System.lineSeparator());
         }

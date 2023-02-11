@@ -10,6 +10,7 @@ import org.apache.logging.log4j.Logger;
 import org.bahmni.module.bahmnicore.contract.SMS.SMSRequest;
 import org.bahmni.module.bahmnicore.service.BahmniDrugOrderService;
 import org.bahmni.module.bahmnicore.service.SMSService;
+import org.openmrs.Location;
 import org.openmrs.Patient;
 
 import org.openmrs.api.context.Context;
@@ -17,6 +18,7 @@ import org.springframework.stereotype.Service;
 
 import java.text.MessageFormat;
 import java.util.Date;
+import java.util.List;
 import java.util.Locale;
 
 import static org.bahmni.module.bahmnicore.util.BahmniDateUtil.convertUTCToGivenFormat;
@@ -60,15 +62,15 @@ public class SMSServiceImpl implements SMSService {
     }
 
     @Override
-    public String getPrescriptionMessage(String lang, Date visitDate, Patient patient, String location, String providerDetail, String prescriptionDetail) {
-        String smsTimeZone = Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, new Locale(lang));
-        String smsDateFormat = Context.getMessageSourceService().getMessage(SMS_DATEFORMAT, null, new Locale(lang));
+    public String getPrescriptionMessage(Locale locale, Date visitDate, Patient patient, Location location, List<String> providerList, String prescriptionDetail) {
+        String smsTimeZone = Context.getMessageSourceService().getMessage(SMS_TIMEZONE, null, locale);
+        String smsDateFormat = Context.getMessageSourceService().getMessage(SMS_DATEFORMAT, null, locale);
         String smsTemplate = Context.getAdministrationService().getGlobalProperty(PRESCRIPTION_SMS_TEMPLATE);
         Object[] arguments = {convertUTCToGivenFormat(visitDate, smsDateFormat, smsTimeZone),
                 patient.getGivenName() + " " + patient.getFamilyName(), patient.getGender(), patient.getAge().toString(),
-                providerDetail, location, prescriptionDetail};
+                org.springframework.util.StringUtils.collectionToCommaDelimitedString(providerList), location.getName(), prescriptionDetail};
         if (StringUtils.isBlank(smsTemplate)) {
-            return Context.getMessageSourceService().getMessage(PRESCRIPTION_SMS_TEMPLATE, arguments, new Locale(lang)).replace("\\n", System.lineSeparator());
+            return Context.getMessageSourceService().getMessage(PRESCRIPTION_SMS_TEMPLATE, arguments, locale).replace("\\n", System.lineSeparator());
         } else {
             return new MessageFormat(smsTemplate).format(arguments).replace("\\n", System.lineSeparator());
         }

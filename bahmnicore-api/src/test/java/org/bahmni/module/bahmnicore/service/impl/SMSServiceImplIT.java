@@ -8,6 +8,7 @@ import org.junit.Test;
 import org.junit.rules.ExpectedException;
 import org.junit.runner.RunWith;
 import org.mockito.Mock;
+import org.openmrs.Location;
 import org.openmrs.Visit;
 import org.openmrs.Person;
 import org.openmrs.api.AdministrationService;
@@ -19,6 +20,7 @@ import org.powermock.modules.junit4.PowerMockRunner;
 
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
 import java.util.Date;
 import java.util.Locale;
 
@@ -62,8 +64,10 @@ public class SMSServiceImplIT {
         person.setGender("M");
         person.setBirthdate(birthDate);
         Visit visit = new VisitBuilder().withPerson(person).withUUID("vuuid").withStartDatetime(visitDate).build();
+        Location location = new Location();
+        location.setName("Bahmni");
 
-        String prescriptionContent = smsService.getPrescriptionMessage("en", visit.getStartDatetime(), visit.getPatient(), "Bahmni", "Superman", "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023");
+        String prescriptionContent = smsService.getPrescriptionMessage(new Locale("en"), visit.getStartDatetime(), visit.getPatient(), location, Arrays.asList("Superman"), "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023");
         String expectedPrescriptionContent = "Date: 30-01-2023\n" +
                 "Prescription For Patient: testPersonName null, M, 13 years.\n" +
                 "Doctor: Superman (Bahmni)\n" +
@@ -84,8 +88,10 @@ public class SMSServiceImplIT {
         person.setGender("M");
         person.setBirthdate(birthDate);
         Visit visit = new VisitBuilder().withPerson(person).withUUID("vuuid").withStartDatetime(visitDate).build();
+        Location location = new Location();
+        location.setName("Bahmni");
 
-        String prescriptionContent = smsService.getPrescriptionMessage("en", visit.getStartDatetime(), visit.getPatient(), "Bahmni", "Superman", "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023");
+        String prescriptionContent = smsService.getPrescriptionMessage(new Locale("en"), visit.getStartDatetime(), visit.getPatient(), location, Arrays.asList("Superman"), "1. Paracetamol 150 mg/ml, 50 ml, Immediately-1 Days, start from 31-01-2023");
         String expectedPrescriptionContent = "Date: 30-01-2023\n" +
                 "Prescription For Patient: testPersonName null, M, 13 years.\n" +
                 "Doctor: Superman (Bahmni)\n" +

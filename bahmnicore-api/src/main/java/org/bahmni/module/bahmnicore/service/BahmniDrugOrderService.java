@@ -15,7 +15,6 @@ import java.util.Date;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.Locale;
 
 public interface BahmniDrugOrderService {
     List<DrugOrder> getActiveDrugOrders(String patientUuid, Date startDate, Date endDate);
@@ -41,11 +40,4 @@ public interface BahmniDrugOrderService {
                                         String patientProgramUuid) throws ParseException;
 
     List<BahmniDrugOrder> getBahmniDrugOrdersForVisit(String patientUuid, String visitUuid);
-
-    Map<BahmniDrugOrder, String> getMergedDrugOrderMap(List<BahmniDrugOrder> drugOrderList);
-
-    String getPrescriptionAsString(Map<BahmniDrugOrder, String> drugOrderDurationMap, Locale locale);
-
-    Set getUniqueProviderNames(List<BahmniDrugOrder> drugOrders);
-
 }

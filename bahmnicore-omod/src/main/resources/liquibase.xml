@@ -4727,18 +4727,6 @@
         </sql>
     </changeSet>
 
-    <changeSet id="create-teleconsultation-link-role-202212012000" author="BAHMNI">
-        <preConditions onFail="MARK_RAN">
-            <sqlCheck expectedResult="0">
-                SELECT count(*) FROM role WHERE role = 'Teleconsultation:CreateLink';
-            </sqlCheck>
-        </preConditions>
-        <comment>Creating new role Teleconsultation:CreateLink for Teleconsultation module</comment>
-        <sql>
-            INSERT INTO role(role, description, uuid) VALUES ("Teleconsultation:CreateLink", "Ability to create teleconsultation link in teleconsultation module", uuid());
-        </sql>
-    </changeSet>
-
     <changeSet id="adding-create-teleconsultation-privilege-to-teleconsultation-createLink-role-202212012000" author="BAHMNI">
         <preConditions onFail="CONTINUE">
             <sqlCheck expectedResult="1">

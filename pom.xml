@@ -225,7 +225,7 @@
             </dependency>
             <dependency>
                 <groupId>org.bahmni.module</groupId>
-                <artifactId>bahmnicore-omod</artifactId>
+                <artifactId>bahmnicore-ts-omod</artifactId>
                 <version>${project.version}</version>
             </dependency>
             <dependency>

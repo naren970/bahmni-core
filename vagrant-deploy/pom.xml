@@ -28,7 +28,7 @@
         </dependency>
         <dependency>
             <groupId>org.bahmni.module</groupId>
-            <artifactId>bahmnicore-omod</artifactId>
+            <artifactId>bahmnicore-ts-omod</artifactId>
         </dependency>
         <dependency>
             <groupId>org.bahmni.module</groupId>

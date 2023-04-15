@@ -7,6 +7,7 @@ import org.joda.time.LocalDate;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.TreeMap;
 
 public class LabOrderResults {
@@ -36,13 +37,14 @@ public class LabOrderResults {
                 orderMap.put(result.getTestName(), new TabularLabOrderResults.TestOrderLabel(testOrderLabelCounter++, result.getTestName(), result.getMinNormal(), result.getMaxNormal(), result.getTestUnitOfMeasurement()));
             }
 
-            if(result.getResult() != null || result.getReferredOut() || result.getUploadedFileName() != null) {
+            boolean referredOut = Optional.ofNullable(result.getReferredOut()).map(refOut -> refOut.booleanValue()).orElse(false);
+            if ((result.getResult() != null) || referredOut || (result.getUploadedFileName() != null)) {
                 TabularLabOrderResults.CoordinateValue coordinateValue = new TabularLabOrderResults.CoordinateValue();
                 coordinateValue.setDateIndex(dateMap.get(orderDate).getIndex());
                 coordinateValue.setTestOrderIndex(orderMap.get(result.getTestName()).getIndex());
                 coordinateValue.setResult(result.getResult());
                 coordinateValue.setAbnormal(result.getAbnormal());
-                coordinateValue.setReferredOut(result.getReferredOut());
+                coordinateValue.setReferredOut(referredOut);
                 coordinateValue.setUploadedFileName(result.getUploadedFileName());
                 coordinateValue.setAccessionDateTime(result.getAccessionDateTime());
                 coordinateValues.add(coordinateValue);

@@ -2,6 +2,9 @@
 
 This module provides necessary services for running Bahmni
 
+This module also contains global property **bahmni.lookupExternalTerminologyServer** to enable/ disable concept search through [FHIR Terminology Service Module](https://github.com/Bahmni/openmrs-module-snomed).
+More details can be found [here](https://bahmni.atlassian.net/wiki/spaces/BAH/pages/3132686337/SNOMED+FHIR+Terminology+Server+Integration+with+Bahmni)
+
 ## Build
 
 [![BahmniCore-master Actions Status](https://github.com/Bahmni/bahmni-core/workflows/Java%20CI%20with%20Maven/badge.svg)](https://github.com/Bahmni/bahmni-core/actions)

@@ -8,5 +8,5 @@ public interface SMSService {
 
     String getRegistrationMessage(Locale locale, Patient patient, Location location);
 
-    String sendSMS(String phoneNumber, String message,String reportingSessionCookie);
+    String sendSMS(String phoneNumber, String message);
 }

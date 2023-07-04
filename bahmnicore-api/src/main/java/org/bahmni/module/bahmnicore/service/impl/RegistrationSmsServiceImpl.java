@@ -23,11 +23,11 @@ public class RegistrationSmsServiceImpl implements RegistrationSmsService {
 
     @Override
     @Transactional(readOnly = true)
-    public Object sendRegistrationSMS(PatientProfile profile,String locationUuid,String reportingSessionCookie) {
+    public void sendRegistrationSMS(PatientProfile profile, String locationUuid, String reportingSessionCookie) {
         Patient patient = profile.getPatient();
         Location location = Context.getLocationService().getLocationByUuid(locationUuid);
         String message = smsService.getRegistrationMessage(new Locale("en"), patient, location);
         smsService.sendSMS(patient.getAttribute("phoneNumber").getValue(),message,reportingSessionCookie);
-        return null;
+        return;
     }
 }

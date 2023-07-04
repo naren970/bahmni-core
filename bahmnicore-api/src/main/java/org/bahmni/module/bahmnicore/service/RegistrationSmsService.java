@@ -5,5 +5,5 @@ import org.springframework.transaction.annotation.Transactional;
 
 public interface RegistrationSmsService {
     @Transactional(readOnly = true)
-    Object sendRegistrationSMS(PatientProfile profile,String location,String reportingSessionCookie);
+    void sendRegistrationSMS(PatientProfile profile,String location,String reportingSessionCookie);
 }

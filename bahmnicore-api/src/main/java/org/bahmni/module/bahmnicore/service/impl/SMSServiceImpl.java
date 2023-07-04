@@ -9,13 +9,16 @@ import org.apache.http.impl.client.CloseableHttpClient;
 import org.apache.http.impl.client.HttpClients;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
+import org.bahmni.module.bahmnicore.service.OpenmrsLogin;
 import org.bahmni.module.bahmnicore.contract.SMS.SMSRequest;
 import org.bahmni.module.bahmnicore.properties.BahmniCoreProperties;
 import org.bahmni.module.bahmnicore.service.BahmniDrugOrderService;
 import org.bahmni.module.bahmnicore.service.SMSService;
+import org.bahmni.webclients.ClientCookies;
 import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.api.context.Context;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.stereotype.Service;
 
 import java.text.MessageFormat;
@@ -23,14 +26,18 @@ import java.util.Locale;
 
 @Service
 public class SMSServiceImpl implements SMSService {
+
+    private OpenmrsLoginImpl openmrsLogin;
     private static Logger logger = LogManager.getLogger(BahmniDrugOrderService.class);
     private final static String REGISTRATION_SMS_TEMPLATE = "sms.registrationSMSTemplate";
     private final static String SMS_URI = "sms.uri";
-
-    public SMSServiceImpl() {}
+    @Autowired
+    public SMSServiceImpl(OpenmrsLoginImpl openmrsLogin) {
+        this.openmrsLogin = openmrsLogin;
+    }
 
     @Override
-    public Object sendSMS(String phoneNumber, String message,String reportingSessionCookie) {
+    public String sendSMS(String phoneNumber, String message,String reportingSessionCookie) {
         try {
             SMSRequest smsRequest = new SMSRequest();
             smsRequest.setPhoneNumber(phoneNumber);
@@ -45,11 +52,13 @@ public class SMSServiceImpl implements SMSService {
             HttpPost request = new HttpPost(Context.getMessageSourceService().getMessage(smsUrl, null, new Locale("en")));
             request.addHeader("content-type", "application/json");
             request.setEntity(params);
-            request.setHeader("Cookie","reporting_session=" +reportingSessionCookie);
+            openmrsLogin.getConnection();
+            ClientCookies clientCookies = openmrsLogin.getCookies();
+            request.setHeader("Cookie","reporting_session="+ clientCookies.entrySet().iterator().next().getValue());
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpResponse response = httpClient.execute(request);
             httpClient.close();
-            return response.getStatusLine();
+            return response.getStatusLine().getReasonPhrase();
         } catch (Exception e) {
             logger.error("Exception occured in sending sms ", e);
             throw new RuntimeException("Exception occured in sending sms ", e);

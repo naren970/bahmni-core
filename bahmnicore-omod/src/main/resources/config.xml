@@ -174,6 +174,24 @@
     </globalProperty>
 
     <globalProperty>
+        <property>sms.enableRegistrationSMSAlert</property>
+        <defaultValue>false</defaultValue>
+        <description>Boolean to enable sending sms when ptient registers</description>
+    </globalProperty>
+
+    <globalProperty>
+        <property>clinic.clinicTimings</property>
+        <defaultValue>Mon-Fri (09:00-22:00), Sat-Sun CLOSED</defaultValue>
+        <description>Global property having timings of particular clinic</description>
+    </globalProperty>
+
+    <globalProperty>
+        <property>sms.registrationSMSTemplate</property>
+        <defaultValue>Thank you for registering at {location}. Please note your Patient Registration Details-{identifier}, name:{patientname}, {gender},Age- {age} years\nFor any queries call us on {helpdesknumber}. Clinic Timings: {facilitytimings}.</defaultValue>
+        <description>Template of sms being sent when patient registers</description>
+    </globalProperty>
+
+    <globalProperty>
         <property>bahmni.executeGroovyObsValueCalculator</property>
         <defaultValue>true</defaultValue>
         <description>Enable or disable Groovy script execution for obs value calculation on encounter save</description>

@@ -125,7 +125,7 @@ public class BahmniPatientProfileResourceTest {
         List<Relationship> relationships = Arrays.asList();
         when(personService.getRelationshipsByPerson(person)).thenReturn(relationships);
 
-        ResponseEntity<Object> response = bahmniPatientProfileResourceSpy.create(null,null,false, propertiesToCreate);
+        ResponseEntity<Object> response = bahmniPatientProfileResourceSpy.create(null,false, propertiesToCreate);
 
         Assert.assertEquals(200, response.getStatusCode().value());
         verify(identifierSourceServiceWrapper, times(1)).generateIdentifierUsingIdentifierSourceUuid("dead-cafe", "");

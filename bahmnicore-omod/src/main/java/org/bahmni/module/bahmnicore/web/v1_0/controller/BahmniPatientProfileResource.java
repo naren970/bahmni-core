@@ -67,7 +67,6 @@ public class BahmniPatientProfileResource extends DelegatingCrudResource<Patient
     @RequestMapping(method = RequestMethod.POST)
     @ResponseBody
     public ResponseEntity<Object> create(@CookieValue(value="bahmni.user.location", required=true) String loginCookie,
-                                         @CookieValue(value = "reporting_session", required = true) String reportingSessionCookie,
                                          @RequestHeader(value = "Jump-Accepted", required = false) boolean jumpAccepted,
                                          @RequestBody SimpleObject propertiesToCreate) throws Exception {
         List identifiers = ((ArrayList) ((LinkedHashMap) propertiesToCreate.get("patient")).get("identifiers"));
@@ -125,7 +124,7 @@ public class BahmniPatientProfileResource extends DelegatingCrudResource<Patient
             JsonParser jsonParser = new JsonParser();
             JsonObject jsonObject = (JsonObject) jsonParser.parse(loginCookie);
             String loginlocation =  jsonObject.get("uuid").getAsString();
-            registrationSmsService.sendRegistrationSMS(delegate,loginlocation,reportingSessionCookie);}
+            registrationSmsService.sendRegistrationSMS(delegate,loginlocation,Context.getUserContext());}
             setRelationships(delegate);
             return new ResponseEntity<>(ConversionUtil.convertToRepresentation(delegate, Representation.FULL), HttpStatus.OK);
         } catch (ContextAuthenticationException e) {

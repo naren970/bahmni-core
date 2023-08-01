@@ -29,15 +29,9 @@ import java.util.regex.Pattern;
 
 @Service
 public class SMSServiceImpl implements SMSService {
-
-    private OpenmrsLoginImpl openmrsLogin;
     private static Logger logger = LogManager.getLogger(BahmniDrugOrderService.class);
     private final static String REGISTRATION_SMS_TEMPLATE = "sms.registrationSMSTemplate";
     private final static String SMS_URI = "sms.uri";
-    @Autowired
-    public SMSServiceImpl(OpenmrsLoginImpl openmrsLogin) {
-        this.openmrsLogin = openmrsLogin;
-    }
 
     @Override
     public String sendSMS(String phoneNumber, String message) {
@@ -45,17 +39,14 @@ public class SMSServiceImpl implements SMSService {
             SMSRequest smsRequest = new SMSRequest();
             smsRequest.setPhoneNumber(phoneNumber);
             smsRequest.setMessage(message);
-
             ObjectMapper Obj = new ObjectMapper();
             String jsonObject = Obj.writeValueAsString(smsRequest);
             StringEntity params = new StringEntity(jsonObject);
             String smsUrl = StringUtils.isBlank(BahmniCoreProperties.getProperty("sms.uri")) ? SMS_URI : BahmniCoreProperties.getProperty("sms.uri");
             HttpPost request = new HttpPost(smsUrl);
             request.addHeader("content-type", "application/json");
+            request.addHeader("Authorization", "Bearer " +BahmniCoreProperties.getProperty("sms-service.token"));
             request.setEntity(params);
-            openmrsLogin.getConnection();
-            ClientCookies clientCookies = openmrsLogin.getCookies();
-            request.setHeader("Cookie","reporting_session="+ clientCookies.entrySet().iterator().next().getValue());
             CloseableHttpClient httpClient = HttpClients.createDefault();
             HttpResponse response = httpClient.execute(request);
             httpClient.close();

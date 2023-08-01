@@ -7,8 +7,10 @@ import org.bahmni.module.bahmnicore.service.SMSService;
 import org.openmrs.Location;
 import org.openmrs.Patient;
 import org.openmrs.api.context.Context;
+import org.openmrs.api.context.UserContext;
 import org.openmrs.module.emrapi.patient.PatientProfile;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -26,8 +28,11 @@ public class RegistrationSmsServiceImpl implements RegistrationSmsService {
     }
 
     @Override
-    @Transactional(readOnly = true)
-    public void sendRegistrationSMS(PatientProfile profile, String locationUuid, String reportingSessionCookie) {
+    @Async("bahmniCoreAsync")
+    public void sendRegistrationSMS(PatientProfile profile, String locationUuid, UserContext userContext) {
+        Context.openSession();
+        Context.setUserContext(userContext);
+        if (Context.getUserContext().hasPrivilege("Send Registration SMS")){
         Patient patient = profile.getPatient();
         String phoneNumber = patient.getAttribute("phoneNumber").getValue();
         if (null == phoneNumber) {
@@ -36,6 +41,8 @@ public class RegistrationSmsServiceImpl implements RegistrationSmsService {
         }
         Location location = Context.getLocationService().getLocationByUuid(locationUuid);
         String message = smsService.getRegistrationMessage(new Locale("en"), patient, location);
-        smsService.sendSMS(phoneNumber, message);
+        smsService.sendSMS(phoneNumber, message);}
+        else
+            log.info("SMS not sent because current user does not have the required privileges");
     }
 }

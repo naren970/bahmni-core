@@ -30,7 +30,7 @@
     </scm>
 
     <modules>
-        <module>bahmni-emr-api</module>
+        <module>bahmni-emr-api-develop</module>
         <module>bahmnicore-api</module>
         <module>openmrs-elis-atomfeed-client-omod</module>
         <module>bahmnicore-omod</module>
